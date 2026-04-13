@@ -7,7 +7,6 @@ via the `_pandasync._udp` service type.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
 
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 
@@ -18,13 +17,13 @@ logger = logging.getLogger(__name__)
 SERVICE_TYPE = "_pandasync._udp.local."
 
 
-@dataclass
 class MDNSDiscovery(ServiceListener):
     """mDNS/DNS-SD device discovery (Tier 1)."""
 
-    _zeroconf: Zeroconf | None = None
-    _browser: ServiceBrowser | None = None
-    _devices: dict[str, DeviceInfo] = field(default_factory=dict)
+    def __init__(self) -> None:
+        self._zeroconf: Zeroconf | None = None
+        self._browser: ServiceBrowser | None = None
+        self._devices: dict[str, DeviceInfo] = {}
 
     def start(self) -> None:
         """Start mDNS discovery."""
@@ -96,7 +95,9 @@ class MDNSDiscovery(ServiceListener):
         """Called when a service is updated."""
         self.add_service(zc, type_, name)
 
-    def _service_info_to_device(self, info: ServiceInfo, name: str) -> DeviceInfo:
+    def _service_info_to_device(
+        self, info: ServiceInfo, name: str
+    ) -> DeviceInfo:
         """Convert a zeroconf ServiceInfo to a DeviceInfo."""
         props = info.properties or {}
         addresses = info.parsed_addresses()

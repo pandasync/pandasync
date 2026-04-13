@@ -4,6 +4,9 @@ plan/
 # Claude Code memory (project context for AI assistant)
 .memory/
 
+# Test bench (local testing scripts, not for git)
+.testbench/
+
 # Python
 __pycache__/
 *.pyc

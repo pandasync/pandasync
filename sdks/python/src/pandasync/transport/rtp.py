@@ -42,10 +42,14 @@ class RTPSender:
     def start(self) -> None:
         """Start the RTP sender."""
         self._socket = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP,
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_UDP,
         )
         self._socket.setsockopt(
-            socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2,
+            socket.IPPROTO_IP,
+            socket.IP_MULTICAST_TTL,
+            2,
         )
         self._ssrc = id(self) & 0xFFFFFFFF
 
@@ -97,7 +101,9 @@ class RTPReceiver:
     def start(self) -> None:
         """Start the RTP receiver."""
         self._socket = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP,
+            socket.AF_INET,
+            socket.SOCK_DGRAM,
+            socket.IPPROTO_UDP,
         )
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.bind(("", self.config.port))

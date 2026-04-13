@@ -17,8 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-        with:
-          python-version: "3.12"
       - name: Install dependencies
         run: uv sync --all-extras
       - name: Ruff check
@@ -39,9 +37,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Set Python version
+        run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --python ${{ matrix.python-version }}
       - name: Run tests
         run: uv run pytest --cov=pandasync --cov-report=xml -v

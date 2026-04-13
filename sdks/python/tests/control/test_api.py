@@ -63,6 +63,7 @@ class TestConnections:
 
     def test_disconnect(self, api_client):
         import uuid
+
         conn_id = str(uuid.uuid4())
         response = api_client.post(
             "/api/v1/disconnect",

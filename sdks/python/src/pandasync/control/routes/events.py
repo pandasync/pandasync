@@ -15,16 +15,20 @@ async def event_stream(websocket: WebSocket) -> None:
     await websocket.accept()
     try:
         # TODO: Wire to event bus
-        await websocket.send_json({
-            "type": "connected",
-            "message": "PandaSync event stream active",
-        })
+        await websocket.send_json(
+            {
+                "type": "connected",
+                "message": "PandaSync event stream active",
+            }
+        )
         while True:
             # Keep connection alive, wait for client messages
             data = await websocket.receive_text()
-            await websocket.send_json({
-                "type": "echo",
-                "data": data,
-            })
+            await websocket.send_json(
+                {
+                    "type": "echo",
+                    "data": data,
+                }
+            )
     except WebSocketDisconnect:
         pass

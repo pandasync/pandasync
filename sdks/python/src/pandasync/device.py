@@ -126,7 +126,9 @@ class Device:
         self._connections.append(connection)
         logger.info(
             "Connection created: %s -> %s via %s",
-            source, destination, transport.value,
+            source,
+            destination,
+            transport.value,
         )
         return connection
 

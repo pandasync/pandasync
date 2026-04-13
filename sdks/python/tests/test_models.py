@@ -49,6 +49,7 @@ class TestDeviceInfo:
 class TestAudioSource:
     def test_defaults(self):
         from uuid import uuid4
+
         source = AudioSource(device_id=uuid4(), name="mic1", channels=2)
         assert source.sample_rate == 48000
         assert source.bit_depth == 24
@@ -58,6 +59,7 @@ class TestAudioSource:
 class TestReceiver:
     def test_defaults(self):
         from uuid import uuid4
+
         receiver = Receiver(device_id=uuid4(), name="input1", channels=4)
         assert receiver.sample_rate == 48000
         assert receiver.channels == 4
@@ -66,6 +68,7 @@ class TestReceiver:
 class TestConnection:
     def test_defaults(self):
         from uuid import uuid4
+
         conn = Connection(source_id=uuid4(), receiver_id=uuid4())
         assert conn.transport == TransportType.AUTO
         assert conn.active is True

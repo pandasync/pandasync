@@ -24,6 +24,8 @@ def api_client() -> TestClient:
 @pytest.fixture
 def invoke(cli_runner: CliRunner):
     """Shorthand for invoking CLI commands."""
+
     def _invoke(*args: str):
         return cli_runner.invoke(cli, list(args))
+
     return _invoke

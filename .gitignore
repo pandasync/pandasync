@@ -1,6 +1,9 @@
 # Internal strategy docs (contain competitor references)
 plan/
 
+# Claude Code memory (project context for AI assistant)
+.memory/
+
 # Python
 __pycache__/
 *.pyc

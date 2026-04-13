@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
+from zeroconf import ServiceBrowser, ServiceInfo, Zeroconf
 
 from pandasync.models import DeviceInfo
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 SERVICE_TYPE = "_pandasync._udp.local."
 
 
-class MDNSDiscovery(ServiceListener):
+class MDNSDiscovery:
     """mDNS/DNS-SD device discovery (Tier 1)."""
 
     def __init__(self) -> None:
@@ -28,7 +28,15 @@ class MDNSDiscovery(ServiceListener):
     def start(self) -> None:
         """Start mDNS discovery."""
         self._zeroconf = Zeroconf()
-        self._browser = ServiceBrowser(self._zeroconf, SERVICE_TYPE, self)
+        self._browser = ServiceBrowser(
+            self._zeroconf,
+            SERVICE_TYPE,
+            handlers=[
+                self.add_service,
+                self.remove_service,
+                self.update_service,
+            ],
+        )
         logger.info("mDNS discovery started for %s", SERVICE_TYPE)
 
     def stop(self) -> None:
@@ -78,28 +86,27 @@ class MDNSDiscovery(ServiceListener):
 
     # ServiceBrowser listener callbacks
 
-    def add_service(
-        self, zeroconf: Zeroconf, service_type: str, name: str
-    ) -> None:
+    def add_service(self, **kwargs: object) -> None:
         """Called when a new service is discovered."""
-        info = zeroconf.get_service_info(service_type, name, timeout=3000)
+        zc: Zeroconf = kwargs["zeroconf"]  # type: ignore[assignment]
+        service_type: str = kwargs["service_type"]  # type: ignore[assignment]
+        name: str = kwargs["name"]  # type: ignore[assignment]
+
+        info = zc.get_service_info(service_type, name, timeout=3000)
         if info:
             device = self._service_info_to_device(info, name)
             self._devices[name] = device
             logger.info("Discovered device: %s", device.name)
 
-    def remove_service(
-        self, zeroconf: Zeroconf, service_type: str, name: str
-    ) -> None:
+    def remove_service(self, **kwargs: object) -> None:
         """Called when a service is removed."""
+        name: str = kwargs["name"]  # type: ignore[assignment]
         self._devices.pop(name, None)
         logger.info("Device removed: %s", name)
 
-    def update_service(
-        self, zeroconf: Zeroconf, service_type: str, name: str
-    ) -> None:
+    def update_service(self, **kwargs: object) -> None:
         """Called when a service is updated."""
-        self.add_service(zeroconf, service_type, name)
+        self.add_service(**kwargs)
 
     def _service_info_to_device(
         self, info: ServiceInfo, name: str

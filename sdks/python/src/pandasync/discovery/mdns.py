@@ -69,7 +69,7 @@ class MDNSDiscovery:
                 "profile": device.profile,
             },
         )
-        self._zeroconf.register_service(info)
+        self._zeroconf.register_service(info, allow_name_change=True)
         logger.info("Registered device '%s' via mDNS", device.name)
 
     def unregister(self, device: DeviceInfo) -> None:

@@ -3,9 +3,10 @@ name: CI -- Python SDK
 on:
   push:
     branches: [main]
-    paths: ["sdks/python/**"]
+    paths: ["sdks/python/**", ".github/workflows/ci-python.yml"]
   pull_request:
-    paths: ["sdks/python/**"]
+    paths: ["sdks/python/**", ".github/workflows/ci-python.yml"]
+  workflow_dispatch:
 
 jobs:
   lint:

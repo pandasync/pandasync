@@ -3,9 +3,10 @@ name: CI -- Docs
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "spec/**"]
+    paths: ["docs/**", "spec/**", ".github/workflows/ci-docs.yml"]
   pull_request:
-    paths: ["docs/**", "spec/**"]
+    paths: ["docs/**", "spec/**", ".github/workflows/ci-docs.yml"]
+  workflow_dispatch:
 
 jobs:
   build:

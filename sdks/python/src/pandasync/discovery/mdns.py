@@ -78,22 +78,28 @@ class MDNSDiscovery(ServiceListener):
 
     # ServiceBrowser listener callbacks
 
-    def add_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+    def add_service(
+        self, zeroconf: Zeroconf, service_type: str, name: str
+    ) -> None:
         """Called when a new service is discovered."""
-        info = zeroconf.get_service_info(type_, name, timeout=3000)
+        info = zeroconf.get_service_info(service_type, name, timeout=3000)
         if info:
             device = self._service_info_to_device(info, name)
             self._devices[name] = device
             logger.info("Discovered device: %s", device.name)
 
-    def remove_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+    def remove_service(
+        self, zeroconf: Zeroconf, service_type: str, name: str
+    ) -> None:
         """Called when a service is removed."""
         self._devices.pop(name, None)
         logger.info("Device removed: %s", name)
 
-    def update_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+    def update_service(
+        self, zeroconf: Zeroconf, service_type: str, name: str
+    ) -> None:
         """Called when a service is updated."""
-        self.add_service(zeroconf, type_, name)
+        self.add_service(zeroconf, service_type, name)
 
     def _service_info_to_device(
         self, info: ServiceInfo, name: str

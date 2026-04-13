@@ -17,8 +17,10 @@ def cli() -> None:
 # Import and register subcommands
 from pandasync.cli.connect import connect as connect_cmd  # noqa: E402
 from pandasync.cli.discover import discover as discover_cmd  # noqa: E402
+from pandasync.cli.serve import serve as serve_cmd  # noqa: E402
 from pandasync.cli.status import status as status_cmd  # noqa: E402
 
 cli.add_command(discover_cmd)
 cli.add_command(connect_cmd)
+cli.add_command(serve_cmd)
 cli.add_command(status_cmd)

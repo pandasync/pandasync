@@ -8,6 +8,7 @@ for embedding PandaSync in a product or application.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
@@ -54,6 +55,7 @@ class Device:
     _clock: ClockManager | None = field(default=None, repr=False)
     _connections: list[Connection] = field(default_factory=list, repr=False)
     _running: bool = field(default=False, repr=False)
+    _started_at: float | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.config is None:
@@ -81,6 +83,7 @@ class Device:
         self._clock = ClockManager()
         self._clock.auto_configure(self.discover())
 
+        self._started_at = time.monotonic()
         self._running = True
         logger.info("Device '%s' started (profile=%s)", self.name, self.profile.value)
 
@@ -93,6 +96,7 @@ class Device:
             self._discovery.unregister(self.info)
             self._discovery.stop()
 
+        self._started_at = None
         self._running = False
         logger.info("Device '%s' stopped", self.name)
 
@@ -186,3 +190,32 @@ class Device:
     def connections(self) -> list[Connection]:
         """Return all active connections."""
         return list(self._connections)
+
+    @property
+    def uptime_seconds(self) -> float:
+        """Return seconds since the device was started."""
+        if self._started_at is None:
+            return 0.0
+        return time.monotonic() - self._started_at
+
+    def serve(
+        self,
+        host: str = "0.0.0.0",
+        port: int | None = None,
+    ) -> None:
+        """Start the device and run the REST API server (blocking).
+
+        Args:
+            host: Bind address for the API server.
+            port: Port for the API server. Defaults to config.api_port.
+        """
+        import uvicorn
+
+        from pandasync.control.api import create_app
+
+        if not self._running:
+            self.start()
+
+        app = create_app(device=self)
+        assert self.config is not None
+        uvicorn.run(app, host=host, port=port or self.config.api_port)

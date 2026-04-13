@@ -63,6 +63,10 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH"]
 
+[tool.ruff.lint.per-file-ignores]
+# FastAPI uses Depends() in function defaults — this is the standard pattern
+"src/pandasync/control/routes/*.py" = ["B008", "TC001"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

@@ -7,8 +7,9 @@ via the `_pandasync._udp` service type.
 from __future__ import annotations
 
 import logging
+import socket
 
-from zeroconf import ServiceBrowser, ServiceInfo, Zeroconf
+from zeroconf import ServiceBrowser, ServiceInfo, ServiceStateChange, Zeroconf
 
 from pandasync.models import DeviceInfo
 
@@ -31,11 +32,7 @@ class MDNSDiscovery:
         self._browser = ServiceBrowser(
             self._zeroconf,
             SERVICE_TYPE,
-            handlers=[
-                self.add_service,
-                self.remove_service,
-                self.update_service,
-            ],
+            handlers=[self._on_state_change],
         )
         logger.info("mDNS discovery started for %s", SERVICE_TYPE)
 
@@ -58,10 +55,23 @@ class MDNSDiscovery:
 
         assert self._zeroconf is not None
 
+        # Resolve this host's addresses for mDNS registration
+        hostname = socket.gethostname()
+        addresses = []
+        try:
+            for addr_info in socket.getaddrinfo(hostname, None, socket.AF_INET):
+                addr = socket.inet_aton(str(addr_info[4][0]))
+                if addr not in addresses:
+                    addresses.append(addr)
+        except OSError:
+            pass
+
         info = ServiceInfo(
             SERVICE_TYPE,
             f"{device.name}.{SERVICE_TYPE}",
             port=device.port,
+            addresses=addresses or None,
+            server=f"{hostname}.local.",
             properties={
                 "version": device.version,
                 "channels_in": str(device.channels_in),
@@ -84,33 +94,32 @@ class MDNSDiscovery:
         )
         self._zeroconf.unregister_service(info)
 
-    # ServiceBrowser listener callbacks
-
-    def add_service(self, **kwargs: object) -> None:
-        """Called when a new service is discovered."""
-        zc: Zeroconf = kwargs["zeroconf"]  # type: ignore[assignment]
+    def _on_state_change(self, **kwargs: object) -> None:
+        """Handle service state changes from the ServiceBrowser."""
+        zeroconf: Zeroconf = kwargs["zeroconf"]  # type: ignore[assignment]
         service_type: str = kwargs["service_type"]  # type: ignore[assignment]
         name: str = kwargs["name"]  # type: ignore[assignment]
+        state_change: ServiceStateChange = kwargs["state_change"]  # type: ignore[assignment]
 
-        info = zc.get_service_info(service_type, name, timeout=3000)
+        if state_change is ServiceStateChange.Added:
+            self._on_service_added(zeroconf, service_type, name)
+        elif state_change is ServiceStateChange.Removed:
+            self._devices.pop(name, None)
+            logger.info("Device removed: %s", name)
+        elif state_change is ServiceStateChange.Updated:
+            self._on_service_added(zeroconf, service_type, name)
+
+    def _on_service_added(
+        self, zeroconf: Zeroconf, service_type: str, name: str
+    ) -> None:
+        """Handle a newly discovered or updated service."""
+        info = zeroconf.get_service_info(service_type, name, timeout=3000)
         if info:
             device = self._service_info_to_device(info, name)
             self._devices[name] = device
             logger.info("Discovered device: %s", device.name)
 
-    def remove_service(self, **kwargs: object) -> None:
-        """Called when a service is removed."""
-        name: str = kwargs["name"]  # type: ignore[assignment]
-        self._devices.pop(name, None)
-        logger.info("Device removed: %s", name)
-
-    def update_service(self, **kwargs: object) -> None:
-        """Called when a service is updated."""
-        self.add_service(**kwargs)
-
-    def _service_info_to_device(
-        self, info: ServiceInfo, name: str
-    ) -> DeviceInfo:
+    def _service_info_to_device(self, info: ServiceInfo, name: str) -> DeviceInfo:
         """Convert a zeroconf ServiceInfo to a DeviceInfo."""
         props = info.properties or {}
         addresses = info.parsed_addresses()

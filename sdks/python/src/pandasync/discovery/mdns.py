@@ -80,7 +80,7 @@ class MDNSDiscovery(ServiceListener):
 
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         """Called when a new service is discovered."""
-        info = zc.get_service_info(type_, name)
+        info = zc.get_service_info(type_, name, timeout=3000)
         if info:
             device = self._service_info_to_device(info, name)
             self._devices[name] = device

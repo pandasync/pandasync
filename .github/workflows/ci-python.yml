@@ -1,0 +1,44 @@
+name: CI -- Python SDK
+
+on:
+  push:
+    branches: [main]
+    paths: ["sdks/python/**"]
+  pull_request:
+    paths: ["sdks/python/**"]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: Install dependencies
+        working-directory: sdks/python
+        run: uv sync --dev
+      - name: Ruff check
+        working-directory: sdks/python
+        run: uv run ruff check src/ tests/
+      - name: Ruff format check
+        working-directory: sdks/python
+        run: uv run ruff format --check src/ tests/
+      - name: Mypy
+        working-directory: sdks/python
+        run: uv run mypy src/
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        working-directory: sdks/python
+        run: uv sync --dev
+      - name: Run tests
+        working-directory: sdks/python
+        run: uv run pytest --cov=pandasync --cov-report=xml -v

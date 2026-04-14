@@ -15,6 +15,8 @@ class ConnectRequest(BaseModel):
     source: str
     destination: str
     transport: TransportType = TransportType.AUTO
+    verification: bool = False
+    drop_rate: float = 0.0
 
 
 class ConnectResponse(BaseModel):
@@ -56,6 +58,7 @@ class StreamReceiveRequest(BaseModel):
 
     source: str
     destination: str
+    verification: bool = False
 
 
 class StreamReceiveResponse(BaseModel):

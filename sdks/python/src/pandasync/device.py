@@ -25,6 +25,7 @@ from pandasync.models import (
     TransportType,
 )
 from pandasync.profiles import Profile
+from pandasync.transport.rtp import RTPConfig
 from pandasync.transport.streams import StreamManager
 
 logger = logging.getLogger(__name__)
@@ -123,6 +124,8 @@ class Device:
         source: str,
         destination: str,
         transport: TransportType = TransportType.AUTO,
+        verification: bool = False,
+        drop_rate: float = 0.0,
     ) -> Connection:
         """Create an audio connection between a source and a receiver.
 
@@ -152,7 +155,11 @@ class Device:
         try:
             resp = httpx.post(
                 url,
-                json={"source": source, "destination": destination},
+                json={
+                    "source": source,
+                    "destination": destination,
+                    "verification": verification,
+                },
                 timeout=5.0,
             )
             resp.raise_for_status()
@@ -166,10 +173,15 @@ class Device:
         remote_port = int(data["port"])
 
         # Start local sender targeting the remote receiver's port
+        sender_config = RTPConfig(
+            verification=verification,
+            drop_rate=drop_rate,
+        )
         local_stream_id = self._streams.create_sender(
             source_desc=f"{source}->{destination}",
             dest_host=dest_device.host,
             dest_port=remote_port,
+            config=sender_config,
         )
 
         connection = Connection(
@@ -226,13 +238,18 @@ class Device:
         self,
         source: str,
         destination: str,
+        verification: bool = False,
     ) -> tuple[UUID, int]:
         """Prepare an RTP receiver for an incoming stream.
 
         Called by the /streams/receive API endpoint. Returns the stream ID
         and port the remote sender should target.
         """
-        return self._streams.create_receiver(source_desc=f"{source}->{destination}")
+        receiver_config = RTPConfig(verification=verification)
+        return self._streams.create_receiver(
+            source_desc=f"{source}->{destination}",
+            config=receiver_config,
+        )
 
     def stop_stream(self, stream_id: UUID) -> bool:
         """Stop a stream by ID (used by API /streams/stop)."""

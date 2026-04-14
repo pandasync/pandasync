@@ -14,6 +14,21 @@ class TestCLI:
         assert "connect" in result.output
         assert "serve" in result.output
         assert "status" in result.output
+        assert "verify" in result.output
+        assert "sniff" in result.output
+
+    def test_verify_help(self, invoke):
+        result = invoke("verify", "--help")
+        assert result.exit_code == 0
+        assert "--host" in result.output
+        assert "--duration" in result.output
+
+    def test_sniff_help(self, invoke):
+        result = invoke("sniff", "--help")
+        assert result.exit_code == 0
+        assert "--port" in result.output
+        assert "--packets" in result.output
+        assert "--expected-freq" in result.output
 
     def test_version(self, invoke):
         result = invoke("--version")

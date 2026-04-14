@@ -26,6 +26,8 @@ async def create_connection(
         request.source,
         request.destination,
         request.transport,
+        verification=request.verification,
+        drop_rate=request.drop_rate,
     )
     return ConnectResponse(
         connection_id=connection.id,

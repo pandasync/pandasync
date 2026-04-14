@@ -35,6 +35,7 @@ async def prepare_receive(
     stream_id, port = device.prepare_receive(
         source=request.source,
         destination=request.destination,
+        verification=request.verification,
     )
     return StreamReceiveResponse(stream_id=stream_id, port=port)
 

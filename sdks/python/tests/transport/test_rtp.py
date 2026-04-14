@@ -97,3 +97,52 @@ class TestRTPSenderReceiver:
         stats = receiver.stats()
         assert stats["packets_received"] == 0
         assert stats["uptime_seconds"] == 0.0
+
+
+class TestVerificationAndJitter:
+    def test_verification_flow(self):
+        port = 15100
+
+        recv_cfg = RTPConfig(verification=True)
+        receiver = RTPReceiver(port=port, config=recv_cfg)
+        receiver.start()
+
+        try:
+            send_cfg = RTPConfig(verification=True, packet_time_ms=1.0)
+            sender = RTPSender(
+                dest_host="127.0.0.1",
+                dest_port=port,
+                config=send_cfg,
+            )
+            sender.start()
+
+            try:
+                time.sleep(0.3)
+            finally:
+                sender.stop()
+
+            time.sleep(0.1)
+
+            stats = receiver.stats()
+            assert stats["packets_received"] > 50
+            assert stats["verification_errors"] == 0
+            jitter = stats["jitter"]
+            assert jitter["samples"] > 10
+            assert jitter["stddev_ms"] is not None
+            assert stats["latency"]["mean_ns"] is not None
+        finally:
+            receiver.stop()
+
+    def test_drop_rate(self):
+        cfg = RTPConfig(drop_rate=0.5)
+        sender = RTPSender(dest_host="127.0.0.1", dest_port=15101, config=cfg)
+        sender.start()
+        try:
+            time.sleep(0.3)
+        finally:
+            sender.stop()
+
+        stats = sender.stats()
+        assert stats["packets_dropped"] > 50
+        total = stats["packets_sent"] + stats["packets_dropped"]
+        assert total > 250

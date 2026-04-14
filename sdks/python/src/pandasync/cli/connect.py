@@ -27,11 +27,25 @@ from pandasync.discovery.manager import DiscoveryManager
     type=float,
     help="Discovery timeout in seconds.",
 )
+@click.option(
+    "--verify",
+    "verification",
+    is_flag=True,
+    help="Enable payload verification (embeds counter + timestamp).",
+)
+@click.option(
+    "--drop-rate",
+    default=0.0,
+    type=float,
+    help="Random packet drop rate (0.0-1.0) for testing loss handling.",
+)
 def connect(
     source: str,
     destination: str,
     transport: str,
     timeout: float,
+    verification: bool,
+    drop_rate: float,
 ) -> None:
     """Connect an audio source to a receiver.
 
@@ -74,6 +88,8 @@ def connect(
                 "source": source,
                 "destination": destination,
                 "transport": transport,
+                "verification": verification,
+                "drop_rate": drop_rate,
             },
             timeout=10.0,
         )

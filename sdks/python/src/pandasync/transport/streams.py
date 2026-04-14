@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-from pandasync.transport.rtp import RTPReceiver, RTPSender
+from pandasync.transport.rtp import RTPConfig, RTPReceiver, RTPSender
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,16 @@ class StreamManager:
     _used_ports: set[int] = field(default_factory=set)
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
-    def create_receiver(self, source_desc: str) -> tuple[UUID, int]:
+    def create_receiver(
+        self,
+        source_desc: str,
+        config: RTPConfig | None = None,
+    ) -> tuple[UUID, int]:
         """Create and start a new RTP receiver.
 
         Args:
             source_desc: Human-readable source identifier (e.g., "Mic:ch1").
+            config: Optional RTP configuration. Port is overridden.
 
         Returns:
             Tuple of (stream_id, bound_port).
@@ -53,7 +58,7 @@ class StreamManager:
             port = self._allocate_port()
             stream_id = uuid4()
 
-            receiver = RTPReceiver(port=port)
+            receiver = RTPReceiver(port=port, config=config)
             receiver.start()
 
             stream = Stream(
@@ -79,6 +84,7 @@ class StreamManager:
         dest_host: str,
         dest_port: int,
         stream_id: UUID | None = None,
+        config: RTPConfig | None = None,
     ) -> UUID:
         """Create and start a new RTP sender.
 
@@ -87,13 +93,18 @@ class StreamManager:
             dest_host: Destination IP or hostname.
             dest_port: Destination UDP port.
             stream_id: Optional pre-assigned stream ID.
+            config: Optional RTP configuration (verification, drop rate, etc.)
 
         Returns:
             The stream_id.
         """
         with self._lock:
             sid = stream_id or uuid4()
-            sender = RTPSender(dest_host=dest_host, dest_port=dest_port)
+            sender = RTPSender(
+                dest_host=dest_host,
+                dest_port=dest_port,
+                config=config,
+            )
             sender.start()
 
             stream = Stream(

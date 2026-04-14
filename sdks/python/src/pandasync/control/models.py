@@ -49,3 +49,30 @@ class StatusResponse(BaseModel):
     clock_offset_us: float
     active_connections: int
     uptime_seconds: float
+
+
+class StreamReceiveRequest(BaseModel):
+    """Request body for POST /api/v1/streams/receive."""
+
+    source: str
+    destination: str
+
+
+class StreamReceiveResponse(BaseModel):
+    """Response body for POST /api/v1/streams/receive."""
+
+    stream_id: UUID
+    port: int
+
+
+class StreamStopRequest(BaseModel):
+    """Request body for POST /api/v1/streams/stop."""
+
+    stream_id: UUID
+
+
+class StreamStopResponse(BaseModel):
+    """Response body for POST /api/v1/streams/stop."""
+
+    stream_id: UUID
+    stopped: bool

@@ -16,9 +16,12 @@ def cli_runner() -> CliRunner:
 
 
 @pytest.fixture
-def device() -> Device:
+def device():
     """A test Device instance (not started, no mDNS)."""
-    return Device(name="TestDevice", channels_in=2, channels_out=2)
+    dev = Device(name="TestDevice", channels_in=2, channels_out=2)
+    dev._streams.base_port = 19000
+    yield dev
+    dev._streams.stop_all()
 
 
 @pytest.fixture

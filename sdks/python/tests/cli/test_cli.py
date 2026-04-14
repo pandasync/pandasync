@@ -50,7 +50,7 @@ class TestCLI:
         assert "--port" in result.output
 
     def test_status_queries_api(self, invoke):
-        mock_response = {
+        status_response = {
             "version": __version__,
             "clock_status": "locked",
             "clock_role": "slave",
@@ -58,10 +58,22 @@ class TestCLI:
             "active_connections": 3,
             "uptime_seconds": 120.0,
         }
-        with patch("pandasync.cli.status.httpx.get") as mock_get:
-            mock_get.return_value.status_code = 200
-            mock_get.return_value.json.return_value = mock_response
-            mock_get.return_value.raise_for_status = lambda: None
+
+        def mock_get(url, **kwargs):
+            mock_resp = type(
+                "Response",
+                (),
+                {
+                    "status_code": 200,
+                    "raise_for_status": lambda self=None: None,
+                    "json": lambda self=None: (
+                        status_response if "status" in url else []
+                    ),
+                },
+            )()
+            return mock_resp
+
+        with patch("pandasync.cli.status.httpx.get", side_effect=mock_get):
             result = invoke("status")
 
         assert result.exit_code == 0

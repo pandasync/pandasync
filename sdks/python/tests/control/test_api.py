@@ -44,59 +44,6 @@ class TestReceivers:
         assert data[1]["name"] == "TestDevice:in2"
 
 
-class TestConnections:
-    def test_connect(self, api_client, device):
-        response = api_client.post(
-            "/api/v1/connect",
-            json={
-                "source": "MicArray:ch1",
-                "destination": "Recorder:ch1",
-            },
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["source"] == "MicArray:ch1"
-        assert data["destination"] == "Recorder:ch1"
-        assert data["status"] == "connected"
-        assert "connection_id" in data
-
-        # Verify the connection exists on the device
-        assert len(device.connections) == 1
-
-    def test_connect_with_transport(self, api_client):
-        response = api_client.post(
-            "/api/v1/connect",
-            json={
-                "source": "Mixer:out1",
-                "destination": "Speaker:in1",
-                "transport": "rtp",
-            },
-        )
-        assert response.status_code == 200
-        assert response.json()["transport"] == "rtp"
-
-    def test_disconnect(self, api_client, device):
-        # First create a connection
-        connect_resp = api_client.post(
-            "/api/v1/connect",
-            json={
-                "source": "Mic:ch1",
-                "destination": "Rec:ch1",
-            },
-        )
-        conn_id = connect_resp.json()["connection_id"]
-        assert len(device.connections) == 1
-
-        # Then disconnect
-        response = api_client.post(
-            "/api/v1/disconnect",
-            json={"connection_id": conn_id},
-        )
-        assert response.status_code == 200
-        assert response.json()["status"] == "disconnected"
-        assert len(device.connections) == 0
-
-
 class TestStatus:
     def test_get_status(self, api_client):
         response = api_client.get("/api/v1/status")

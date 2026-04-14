@@ -18,6 +18,27 @@ logger = logging.getLogger(__name__)
 SERVICE_TYPE = "_pandasync._udp.local."
 
 
+def _is_private_ipv4(addr: str) -> bool:
+    """Check if an IPv4 address is in RFC1918 private range."""
+    if addr.startswith("10.") or addr.startswith("192.168."):
+        return True
+    if addr.startswith("172."):
+        parts = addr.split(".")
+        if len(parts) >= 2 and parts[1].isdigit():
+            second = int(parts[1])
+            if 16 <= second <= 31:
+                return True
+    return False
+
+
+def _pick_best_address(addresses: list[str]) -> str:
+    """Prefer RFC1918 LAN addresses over overlay/VPN addresses."""
+    for addr in addresses:
+        if _is_private_ipv4(addr):
+            return addr
+    return addresses[0]
+
+
 class MDNSDiscovery:
     """mDNS/DNS-SD device discovery (Tier 1)."""
 
@@ -55,17 +76,36 @@ class MDNSDiscovery:
 
         assert self._zeroconf is not None
 
-        # Resolve this host's addresses for mDNS registration
-        hostname = socket.gethostname()
-        addresses = []
-        try:
-            for addr_info in socket.getaddrinfo(hostname, None, socket.AF_INET):
-                addr = socket.inet_aton(str(addr_info[4][0]))
-                if addr not in addresses:
-                    addresses.append(addr)
-        except OSError:
-            pass
+        # Enumerate all IPv4 addresses on non-loopback interfaces.
+        # Prefer RFC1918 LAN addresses first (cleaner for mDNS on a LAN).
+        import ifaddr
 
+        private = []
+        other = []
+        for adapter in ifaddr.get_adapters():
+            for ip in adapter.ips:
+                if not isinstance(ip.ip, str):
+                    continue
+                if ip.ip.startswith("127."):
+                    continue
+                try:
+                    packed = socket.inet_aton(ip.ip)
+                except OSError:
+                    continue
+                if (
+                    ip.ip.startswith("10.")
+                    or ip.ip.startswith("192.168.")
+                    or (
+                        ip.ip.startswith("172.")
+                        and 16 <= int(ip.ip.split(".")[1]) <= 31
+                    )
+                ):
+                    private.append(packed)
+                else:
+                    other.append(packed)
+        addresses = private + other
+
+        hostname = socket.gethostname()
         info = ServiceInfo(
             SERVICE_TYPE,
             f"{device.name}.{SERVICE_TYPE}",
@@ -123,7 +163,7 @@ class MDNSDiscovery:
         """Convert a zeroconf ServiceInfo to a DeviceInfo."""
         props = info.properties or {}
         addresses = info.parsed_addresses()
-        host = addresses[0] if addresses else "unknown"
+        host = _pick_best_address(addresses) if addresses else "unknown"
 
         channels_in = props.get(b"channels_in", b"0") or b"0"
         channels_out = props.get(b"channels_out", b"0") or b"0"

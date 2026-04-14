@@ -14,6 +14,7 @@ from pandasync.control.routes import (
     receivers,
     sources,
     status,
+    streams,
 )
 
 if TYPE_CHECKING:
@@ -47,6 +48,7 @@ def create_app(device: Device | None = None) -> FastAPI:
     app.include_router(receivers.router, prefix="/api/v1", tags=["receivers"])
     app.include_router(connections.router, prefix="/api/v1", tags=["connections"])
     app.include_router(status.router, prefix="/api/v1", tags=["status"])
+    app.include_router(streams.router, prefix="/api/v1", tags=["streams"])
     app.include_router(events.router, prefix="/api/v1", tags=["events"])
 
     @app.get("/")
